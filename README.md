@@ -32,6 +32,10 @@ Library or Exe type projects.
 		# it is configured in nuget: `nuget sources add -Name MyPackages -Source c:\nuget`
 		nuget push -source c:\nuget ObjectDumperLib.nupkg
 
+ 1. If you want to publish nuget packages using `lpmake -Publish` switch, then
+    you need to define an environment variable named `mynuget` to point to a
+    location when you want to publish the packages, such as `c:\nuget`.
+
 ## Usage
  1. Ensure your Linqpad query has a special comment line that will be used by
 	this script to differentiate between "program" code and "library" code: the
@@ -49,6 +53,3 @@ Library or Exe type projects.
 	include the "program" code before the special comment line), use
 	`-OutputType Exe`.
  1. You can use `-Load` to immediately load the compiled assemby into PowerShell.
- 1. You can use `-Publish` to publish the compiled assembly as a nuget
-    package: right now since this will involve setup a nuget custom source I am
-    delegating this to an external command `Publish-MyNugetPackage` to do that.
