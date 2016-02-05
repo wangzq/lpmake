@@ -48,3 +48,7 @@ Library or Exe type projects.
 	the special comment line will be used; to generate an Exe type project (and
 	include the "program" code before the special comment line), use
 	`-OutputType Exe`.
+ 1. You can use `-Load` to immediately load the compiled assemby into PowerShell.
+ 1. You can use `-Publish` to publish the compiled assembly as a nuget
+    package: right now since this will involve setup a nuget custom source I am
+    delegating this to an external command `Publish-MyNugetPackage` to do that.

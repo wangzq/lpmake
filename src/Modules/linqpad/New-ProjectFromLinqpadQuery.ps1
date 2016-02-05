@@ -23,7 +23,14 @@ function New-ProjectFromLinqpadQuery
 		[ValidateSet('Library', 'Exe')]
 		[string] $OutputType = 'Library',
 
-		[string] $ObjectDumper = 'ObjectDumperLib'
+		[string] $ObjectDumper = 'ObjectDumperLib',
+
+        # Immediately load the built assembly into PowerShell
+        [switch] $Load,
+
+        # Publish as a nuget package using command `Publish-MyNugetPackage` which you needs
+        # to define yourself, it requires a mandatory parameter which is the package id.
+        [switch] $Publish
 		)
 	$csharpImports = @(
 			'System'
@@ -227,6 +234,20 @@ function New-ProjectFromLinqpadQuery
 	}
 
 	& $msbuild $projectFile
+    if ($LastExitCode -eq 0) {
+        if ($islib) {
+            if ($Load) {
+                Add-Type -Path "bin\debug\$Name.dll"
+            }
+            if ($Publish) {
+                if (Get-Command Publish-MyNugetPackage -ErrorAction SilentlyContinue) {
+                    Publish-MyNugetPackage $Name
+                } else {
+                    throw "You need to write a script or module function named Publish-MyNugetPackage to publish the nuget package to your own nuget source." 
+                }
+            }
+        }
+    }
 }
 
 Set-Alias lpmake New-ProjectFromLinqpadQuery -Force
