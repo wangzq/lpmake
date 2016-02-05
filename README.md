@@ -2,7 +2,7 @@
 Scripts written in PowerShell to generate a msbuild project file from a Linqpad
 Query, then you can build with msbuild. Supports Nuget packages by creating
 [project.json](http://docs.nuget.org/consume/ProjectJson-Intro), which you can
-restore using Nuget 3 (will be downloaded automatically if not found in PATH)
+restore using [Nuget 3](http://dist.nuget.org/win-x86-commandline/latest/nuget.exe)
 and build with [Build Tools
 2015](https://www.microsoft.com/en-us/download/details.aspx?id=48159)(included
 in Visual Studio 2015).
@@ -11,6 +11,12 @@ Currently only supports C# and F# program type queries, and only generates
 Library or Exe type projects.
 
 ## Setup
+ 1. Ensure latest
+    [nuget.exe](http://dist.nuget.org/win-x86-commandline/latest/nuget.exe) is
+    in your PATH.
+ 1. Install [Build Tools
+    2015](https://www.microsoft.com/en-us/download/details.aspx?id=48159) if
+    you haven't installed Visual Studio 2015.
  1. Either copy the folders in `src\Modules` to your PowerShell Modules path or
 	execute `src\Use-Lpmake.ps1` to load the modules for you.
  1. For LinqPad queries using `Dump` extension method, you will need to have a

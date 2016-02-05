@@ -43,6 +43,8 @@ function ConvertFrom-LinqpadQuery
 				'System.Drawing'
 			) | % { New-Object System.Reflection.AssemblyName($_) }
 		}
+
+        [Environment]::CurrentDirectory = (Get-Location -PSProvider FileSystem).ProviderPath
 	}
 	process {
 		$Path = [IO.Path]::GetFullPath($Path)
