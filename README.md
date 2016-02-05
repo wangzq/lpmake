@@ -19,6 +19,13 @@ Library or Exe type projects.
     you haven't installed Visual Studio 2015.
  1. Either copy the folders in `src\Modules` to your PowerShell Modules path or
 	execute `src\Use-Lpmake.ps1` to load the modules for you.
+ 1. If you want to publish nuget packages using `lpmake -Publish` switch, then
+    you need to define an environment variable named `mynuget` to point to a
+    location when you want to publish the packages, such as `c:\nuget`. You
+    need to ensure it is configured in nuget:
+
+		nuget sources add -Name MyPackages -Source c:\nuget
+
  1. For LinqPad queries using `Dump` extension method, you will need to have a
 	custom Nuget package named `ObjectDumperLib` which contains extension
 	method `Dump` for any object. You can change this by `lpmake -ObjectDumper
@@ -26,15 +33,7 @@ Library or Exe type projects.
 	`src\Extra\ObjectDumperLib.linq` which can be built with `lpmake` and
 	publish as a Nuget package:
 
-        lpmake .\src\Extra\ObjectDumperLib.linq
-		nuget pack -Version 1.0.0
-		# change c:\nuget to your own nuget package source; you need to ensure
-		# it is configured in nuget: `nuget sources add -Name MyPackages -Source c:\nuget`
-		nuget push -source c:\nuget ObjectDumperLib.nupkg
-
- 1. If you want to publish nuget packages using `lpmake -Publish` switch, then
-    you need to define an environment variable named `mynuget` to point to a
-    location when you want to publish the packages, such as `c:\nuget`.
+        lpmake .\src\Extra\ObjectDumperLib.linq -Publish
 
 ## Usage
  1. Ensure your Linqpad query has a special comment line that will be used by
