@@ -119,7 +119,12 @@ function New-ProjectFromLinqpadQuery
 	$ErrorActionPreference = 'Stop'
 
 	if (!$TargetDir) { $TargetDir = New-TempDirectory }
-	if (!$Name) { $Name = [IO.Path]::GetFileNameWithoutExtension($QueryPath).Replace(' ', '') }
+	if (!$Name) { 
+		$Name = [IO.Path]::GetFileNameWithoutExtension($QueryPath)
+		' `!@#$%^&*()-+=[]{},.;''"'.ToCharArray() | % {
+			$Name = $Name.Replace($_.ToString(), '')
+		}
+	}
 
 	$query = ConvertFrom-LinqpadQuery $QueryPath
 	$supportedKinds = @('Program', 'FSharpProgram')
