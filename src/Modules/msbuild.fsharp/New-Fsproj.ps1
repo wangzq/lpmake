@@ -14,7 +14,10 @@ function New-Fsproj
 		[string[]] $References,
 		[string[]] $Sources,
 		[string[]] $Contents,
-		[string] $OutputType = 'Library'
+		[string] $OutputType = 'Library',
+
+		# conditional compilations
+		[string] $Conditions
 		)
 	function GetList($name, $items) {
 		foreach($item in $items) {
@@ -28,6 +31,7 @@ function New-Fsproj
 		'$name$', $Name).Replace(
 		'$references$', ((GetList 'Reference' $References) -join "`n")).Replace(
 		'$compiles$', ((GetList 'Compile' $Sources) -join "`n")).Replace(
+		'$conditions$', $Conditions).Replace(
 		'$contents$', ((GetList 'Content' $Contents) -join "`n")).Replace(
 		'$outputType$', $OutputType)
 }

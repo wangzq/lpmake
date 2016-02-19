@@ -15,7 +15,10 @@ function New-Csproj
 		[string[]] $Sources,
 		[string[]] $Contents,
 		[switch] $Unsafe,
-		[string] $OutputType = 'Library'
+		[string] $OutputType = 'Library',
+
+		# conditional compilations
+		[string] $Conditions
 		)
 	function GetList($name, $items) {
 		foreach($item in $items) {
@@ -35,6 +38,7 @@ function New-Csproj
 		'$references$', ((GetList 'Reference' $References) -join "`n")).Replace(
 		'$compiles$', ((GetList 'Compile' $Sources) -join "`n")).Replace(
 		'$contents$', ((GetList 'Content' $Contents) -join "`n")).Replace(
+		'$conditions$', $Conditions).Replace(
 		'$unsafe$', $unsafeCode).Replace(
 		'$outputType$', $OutputType)
 }
