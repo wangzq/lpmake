@@ -119,7 +119,12 @@ function New-ProjectFromLinqpadQuery
 	$ErrorActionPreference = 'Stop'
 
 	if (!$TargetDir) { $TargetDir = New-TempDirectory }
-	if (!$Name) { $Name = [IO.Path]::GetFileNameWithoutExtension($QueryPath).Replace(' ', '') }
+	if (!$Name) { 
+		$Name = [IO.Path]::GetFileNameWithoutExtension($QueryPath)
+		' `!@#$%^&*()-+=[]{},;''"'.ToCharArray() | % {
+			$Name = $Name.Replace($_.ToString(), '')
+		}
+	}
 
 	$query = ConvertFrom-LinqpadQuery $QueryPath
 	$supportedKinds = @('Program', 'FSharpProgram')
@@ -235,10 +240,15 @@ function New-ProjectFromLinqpadQuery
 	)
 
 	# generate project file
-	if ($fsharp) {
-		$content = New-Fsproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -OutputType $OutputType 
+	if ($islib) {
+		$conditions = ''
 	} else {
-		$content = New-Csproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -Unsafe:$Unsafe -OutputType $OutputType
+		$conditions = ';CMD'
+	}
+	if ($fsharp) {
+		$content = New-Fsproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -OutputType $OutputType -Conditions $conditions
+	} else {
+		$content = New-Csproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -Unsafe:$Unsafe -OutputType $OutputType -Conditions $conditions
 	}
 	$content | Out-File $projectFile -Encoding UTF8
 
@@ -261,7 +271,9 @@ function New-ProjectFromLinqpadQuery
                 Add-Type -Path "bin\debug\$Name.dll"
             }
             if ($Publish) {
-				$query.NugetReferences | New-NugetSpec | Out-File "$Name.nuspec" -Encoding UTF8
+				if ($query.NugetReferences) {
+					$query.NugetReferences | New-NugetSpec | Out-File "$Name.nuspec" -Encoding UTF8
+				}
 				Publish-MyNugetPackage $Name
             }
         }
