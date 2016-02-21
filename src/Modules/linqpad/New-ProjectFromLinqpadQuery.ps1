@@ -149,6 +149,10 @@ function New-ProjectFromLinqpadQuery
 		} else {
 			$maincode += $line
 		}
+
+		if ($line -match '^//\s*lpmake\s+-unsafe') {
+			$Unsafe = [switch] $true
+		}
 	}
 
 	if ($fsharp) {
