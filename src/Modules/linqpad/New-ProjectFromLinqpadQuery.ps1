@@ -275,10 +275,14 @@ function New-ProjectFromLinqpadQuery
                 Add-Type -Path "bin\debug\$Name.dll"
             }
             if ($Publish) {
+				$prerelease = [switch] $false
 				if ($query.NugetReferences) {
 					$query.NugetReferences | New-NugetSpec | Out-File "$Name.nuspec" -Encoding UTF8
+					if ($query.NugetReferences | ? { $_.Prerelease }) {
+						$prerelease = [switch] $true
+					}
 				}
-				Publish-MyNugetPackage $Name
+				Publish-MyNugetPackage $Name -Prerelease:$prerelease
             }
         }
     }

@@ -15,14 +15,20 @@ function ConvertFrom-LinqpadQuery
 	begin{
 		function ParseNugetReferences($elements) {
 			foreach($element in $elements) {
-				if ($element.Version) {
+				if ($element.Version -OR $element.Prerelease) {
 					$name = $element.'#text'
 				} else {
 					$name = $element
 				}
+				if ($element.Prerelease -eq 'true') {
+					$prerelease = $true
+				} else {
+					$prerelease = $false
+				}
 				[PsCustomObject] @{
 					Name = $name
 					Version = $element.Version
+					Prerelease = $prerelease
 				}
 			}
 		}
@@ -41,6 +47,7 @@ function ConvertFrom-LinqpadQuery
 			}
 			@(
 				'System.Drawing'
+				'System.Windows.Forms'
 			) | % { New-Object System.Reflection.AssemblyName($_) }
 		}
 

@@ -11,7 +11,9 @@ function Publish-MyNugetPackage
 		[Parameter(Mandatory=$true)]
 		[string] $Name,
 
-		[string] $Version
+		[string] $Version,
+
+		[switch] $Prerelease
 		)
     $ErrorActionPreference = 'Stop'
 
@@ -33,6 +35,7 @@ function Publish-MyNugetPackage
 	}
 
     $projectFile = dir "$Name.*proj" | Select -First 1 | Select -Exp Name
+	if ($Prerelease) { $Version = $Version + '-preview' }
 	nuget pack $projectFile -Version $Version -Symbols
 	# it seems publishing the symbols version package will keep the name as if no symbols, so following command
 	# is actually not necessary

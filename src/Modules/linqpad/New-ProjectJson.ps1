@@ -12,6 +12,9 @@ function New-ProjectJson
 
         [Parameter(ValueFromPipelineByPropertyName=$true)]
         [string] $Version,
+		
+		[Parameter(ValueFromPipelineByPropertyName=$true)]
+		[bool] $Prerelease,
 
         [string] $Framework='net45',
         [string] $Runtimes='win'
@@ -20,9 +23,26 @@ function New-ProjectJson
         '{'
         '  "dependencies": {'
         $items = @()
+
+		function Get-LatestPrereleaseVersion($id) {
+			$result = & nuget list $id -pre
+			if ($result -match 'No packages found') {
+				throw "Unable to find nuget package '$id' -pre"
+			}
+			if ($result -match "^$([regex]::Escape($id)) (.*)$") {
+				return $matches[1]
+			}
+			throw "Unexpected result when listing package '$id' -pre: $result"
+		}
     }
     process {
-        if (!$Version) { $Version = '*' }
+        if (!$Version) { 
+			if (!$Prerelease) {	
+				$Version = '*' 
+			} else {
+				$Version = Get-LatestPrereleaseVersion $Id
+			}
+		}
         $items += "    ""$Id"": ""$Version"""
     }
     end {
