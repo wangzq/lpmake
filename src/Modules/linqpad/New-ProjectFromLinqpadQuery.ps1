@@ -141,6 +141,7 @@ function New-ProjectFromLinqpadQuery
 	$flagFound = $false
 	$libcode = @()
 	$maincode = @()
+	$exeOnly = @{}
 	foreach($line in $query.Code) {
 		if (!$flagFound -AND ($line -match $FLAG)) {
 			$flagFound = $true
@@ -150,8 +151,18 @@ function New-ProjectFromLinqpadQuery
 			$maincode += $line
 		}
 
-		if ($line -match '^//\s*lpmake\s+-unsafe') {
-			$Unsafe = [switch] $true
+		# any line starts with `// lpmake ` will be treated as additional configurations we can process, which are
+		# written as PowerShell hashtable, such as `@{Unsafe=$true}`
+		if ($line -match '^// \s*lpmake\s+') {
+			$options = Invoke-Expression $line.Substring($matches[0].Length)
+			if ($options.Unsafe) { $Unsafe = [switch] $true }
+			if ($options.ExeOnly) {
+				# Specify which references and namespaces are only used in the 'Exe' part of the linq query, so that 
+				# when creating the library and/or publish as nuget packages, these dependencies will be removed.
+				# sample: 
+				# @{ExeOnly = @{NugetPackages = @('package1', 'package2'); Assemblies = @('c:\temp\foo.dll'); GacAssemblies = @('System.Windows.Forms'); Namespaces=@('System.Windows.Forms')}}
+				$exeOnly = $options.ExeOnly
+			}
 		}
 	}
 
@@ -163,6 +174,22 @@ function New-ProjectFromLinqpadQuery
 	if ($islib -AND ($libcode.Length -eq 0)) {
 		# only validate when it is a library but no library code found
 		throw "No valid library code found; please ensure you have $FLAG in source, only code after it will be compiled."
+	}
+
+	# handle exeOnly options
+	if ($islib -AND $exeOnly) {
+		if ($exeOnly.NugetPackages) {
+			[array] $query.NugetReferences = $query.NugetReferences | ? { $exeOnly.NugetPackages -notcontains $_.Name }
+		}
+		if ($exeOnly.Assemblies) {
+			[array] $query.References = $query.References | ? { $exeOnly.Assemblies -notcontains $_ }
+		}
+		if ($exeOnly.GacAssemblies) {
+			[array] $query.GacReferences = $query.GacReferences | ? { $exeOnly.GacAssemblies -notcontains $_.Name }
+		}
+		if ($exeOnly.Namespaces) {
+			[array] $query.Namespaces = $query.Namespaces | ? { $exeOnly.Namespaces -notcontains $_ }
+		}
 	}
 
 	# validate files to be written don't exist already
@@ -238,7 +265,7 @@ function New-ProjectFromLinqpadQuery
 		}
 		if ($query.GacReferences) {
 			$query.GacReferences | % {
-				$_.Name
+				$_.FullName
 			}
 		}
 	)
