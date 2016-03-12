@@ -65,6 +65,7 @@ function ConvertFrom-LinqpadQuery
 				} else {
 					$xmlLines += $_
 				}
+				if ($_.Trim() -eq '</Query>') { $xmlEndingFound = $true }
 			} else {
 				$codeLines += $_
 			}
@@ -80,6 +81,7 @@ function ConvertFrom-LinqpadQuery
 			NugetReferences = [array] (ParseNugetReferences $doc.Query.NugetReference)
 			Namespaces = [array] ($doc.Query.Namespace)
 			Code = [array] ($codeLines)
+			Path = $Path
 		}
 	}
 }
