@@ -48,7 +48,7 @@ function New-ProjectJson
     end {
         $items -join ",`n"
         '  },'
-        '  "frameworks": { "net45": { } },'
+        '  "frameworks": { "net452": { } },'
         '  "runtimes": { "win": { } }'
         '}'
     }
