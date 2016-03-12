@@ -20,11 +20,12 @@ function New-ProjectFromLinqpadQuery
 		# TODO: how do I detect this from code using Roslyn?
 		[switch] $Unsafe,
 
-		[ValidateSet('Library', 'Exe')]
+		[ValidateSet('Library', 'Exe', 'WinExe')]
 		[string] $OutputType = 'Library',
 
         # Used when compile as Exe and using LinqPad extension method Dump, you need to have
-        # a nuget package with this name; see Readme for more info.
+        # a nuget package with this name; see Readme for more info. If you are not using
+		# Dump extension method then you can set this to null to avoid having an extra dependency.
 		[string] $ObjectDumper = 'ObjectDumperLib',
 
         # Immediately load the built assembly into PowerShell
@@ -32,7 +33,9 @@ function New-ProjectFromLinqpadQuery
 
         # Publish as a nuget package using command `Publish-MyNugetPackage` which you needs
         # to define yourself, it requires a mandatory parameter which is the package id.
-        [switch] $Publish
+        [switch] $Publish,
+
+		[switch] $Force
 		)
 	$csharpImports = @(
 			'System'
@@ -142,7 +145,22 @@ function New-ProjectFromLinqpadQuery
 	$libcode = @()
 	$maincode = @()
 	$exeOnly = @{}
+	$mainIsVoid = $true
+	$mainHasArgs = $false
+	$hasStaticMain = $false
 	foreach($line in $query.Code) {
+		if ($line -match '(static )?(void|int) Main\((string\[\] args)?\)') {
+			if ($matches[1]) {
+				# if it has static Main then we should use it as-is
+				$hasStaticMain = $true
+			} 
+			if ($matches[2] -eq 'int') { $mainIsVoid = $false }
+			if ($matches[3]) { $mainHasArgs = $true }
+			if (!$hasStaticMain) {
+				$line = "$($matches[2]) MainMain($($matches[3]))"
+			}
+		}
+
 		if (!$flagFound -AND ($line -match $FLAG)) {
 			$flagFound = $true
 		} elseif ($flagFound) {
@@ -164,6 +182,7 @@ function New-ProjectFromLinqpadQuery
 				$exeOnly = $options.ExeOnly
 			}
 		}
+
 	}
 
 	if ($fsharp) {
@@ -192,22 +211,27 @@ function New-ProjectFromLinqpadQuery
 		}
 	}
 
+	# change to WinExe using exeOnly options
+	if (!$islib -AND $exeOnly.OutputType) {
+		$OutputType = $exeOnly.OutputType	
+	}
+
 	# validate files to be written don't exist already
 	$ft = $(if ($fsharp) { 'f' } else { 'c' })
 	$projectFile = [IO.Path]::Combine($TargetDir, "$Name.${ft}sproj")
-	if (Test-Path $projectFile) { throw "$projectFile already exists" }
+	if (!$Force -AND (Test-Path $projectFile)) { throw "$projectFile already exists" }
 	$sourceFile = [IO.Path]::Combine($TargetDir, "$Name.${ft}s")
-	if (Test-Path $sourceFile) { throw "$sourceFile already exists" }
+	if (!$Force -ANd (Test-Path $sourceFile)) { throw "$sourceFile already exists" }
     $projectJson = [IO.Path]::Combine($TargetDir, "project.json")
 
 	# generate project.json
-    if (!$islib) {
+    if (!$islib -and $ObjectDumper) {
         AddNamespace $query $ObjectDumper
         AddNugetRef $query $ObjectDumper '*'
     }
 
     if ($fsharp) {
-        if (!$islib) {
+        if (!$islib -AND $ObjectDumper) {
             AddNamespace $query $ObjectDumper
         }
         AddNugetRef $query 'FSharp.Core' '4.0.0.1'
@@ -230,22 +254,29 @@ function New-ProjectFromLinqpadQuery
 
 		if (!$fsharp) {
 			if (!$islib) {
-				@'
+				if (!$hasStaticMain) {
+				@"
 				internal class Program 
 				{
-					static void Main(string[] args) {
-						new Program().Main();
+					$(if ($OutputType -eq 'WinExe') { '[System.STAThread]' }) 
+					static $(if ($mainIsVoid) { 'void' } else { 'int' }) Main(string[] args) {
+						$(if ($mainIsVoid) { '' } else { 'return' }) new Program().MainMain($(if ($mainHasArgs) { 'args' } else { '' }));
 					}
-'@
+"@
+				}
 				$maincode
+				if (!$hasStaticMain) {
 				'}'
+				}
 			}
 
 			$libcode
 			'}'
 		} else {
 			if (!$islib) {
-                'let Dump = ObjectDumper.Write'
+				if ($ObjectDumper) {
+					'let Dump = ObjectDumper.Write'
+				}
 				$query.Code
 			} else {
 				$libcode
