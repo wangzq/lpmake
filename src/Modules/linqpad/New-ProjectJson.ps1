@@ -17,7 +17,9 @@ function New-ProjectJson
 		[bool] $Prerelease,
 
         [string] $Framework='net45',
-        [string] $Runtimes='win'
+        [string] $Runtimes='win',
+
+		[string[]] $NugetSources
         )
     begin {
         '{'
@@ -25,7 +27,13 @@ function New-ProjectJson
         $items = @()
 
 		function Get-LatestPrereleaseVersion($id) {
-			$result = & nuget list $id -pre
+			$nugetArgs = @('list', $id, '-pre')
+			if ($NugetSources) {
+				$NugetSources | % {
+					$nugetArgs += ('-source', $_)
+				}
+			}
+			$result = & nuget @nugetArgs
 			if ($result -match 'No packages found') {
 				throw "Unable to find nuget package '$id' -pre"
 			}

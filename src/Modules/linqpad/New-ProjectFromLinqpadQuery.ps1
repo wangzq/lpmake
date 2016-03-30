@@ -14,6 +14,12 @@ function New-ProjectFromLinqpadQuery
 		# Used to store the generated files; will create a new temporary directory if not specified.
 		[string] $TargetDir,
 
+		# Sometimes we want to use the generated project name as the target directory name, which means
+		# we cannot use TargetDir to specify that, this optional parameter can help with that: when
+		# TargetDir is not specified and this TargetBaseDir is specified, the TargetDir will be generated
+		# based on the TargetBaseDir + Generated_Name_from_QueryPath.
+		[string] $TargetBaseDir,
+
 		# Used as the source file name as well as assembly and namespace name; will be inferrred from the query file if not specified.
 		[string] $Name,
 
@@ -35,7 +41,10 @@ function New-ProjectFromLinqpadQuery
         # to define yourself, it requires a mandatory parameter which is the package id.
         [switch] $Publish,
 
-		[switch] $Force
+		[switch] $Force,
+
+		# used when restore packages
+		[string[]] $NugetSources
 		)
 	$csharpImports = @(
 			'System'
@@ -121,13 +130,19 @@ function New-ProjectFromLinqpadQuery
 
 	$ErrorActionPreference = 'Stop'
 
-	if (!$TargetDir) { $TargetDir = New-TempDirectory }
 	if (!$Name) { 
 		$Name = [IO.Path]::GetFileNameWithoutExtension($QueryPath)
 		' `!@#$%^&*()-+=[]{},;''"'.ToCharArray() | % {
 			$Name = $Name.Replace($_.ToString(), '')
 		}
 	}
+
+	if (!$TargetDir) { 
+		if (!$TargetBaseDir) { $TargetDir = New-TempDirectory }
+		else { $TargetDir = Join-Path $TargetBaseDir $Name }
+	}
+
+	if (!(Test-Path $TargetDir)) { mkdir $TargetDir | Out-Null }
 
 	$query = ConvertFrom-LinqpadQuery $QueryPath
 	$supportedKinds = @('Program', 'FSharpProgram')
@@ -237,7 +252,7 @@ function New-ProjectFromLinqpadQuery
         AddNugetRef $query 'FSharp.Core' '4.0.0.1'
     }
 	if ($query.NugetReferences) {
-        $query.NugetReferences | New-ProjectJson | Out-File $projectJson -Encoding UTF8
+        $query.NugetReferences | New-ProjectJson -NugetSources $NugetSources | Out-File $projectJson -Encoding UTF8
     }
 
 	# generate source file
@@ -316,7 +331,13 @@ function New-ProjectFromLinqpadQuery
 
 	Push-Location $TargetDir
 	if ($query.NuGetReferences) {
-		nuget restore $projectJson
+		$nugetArgs = @('restore', $projectJson)
+		if ($NugetSources) {
+			$NugetSources | % {
+				$nugetArgs += ('-source', $_)
+			}
+		}
+		& nuget @nugetArgs
 
         Resolve-NugetReferenceVersions $query.NugetReferences 'project.lock.json'
 	}
