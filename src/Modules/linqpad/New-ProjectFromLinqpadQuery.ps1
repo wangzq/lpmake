@@ -163,8 +163,9 @@ function New-ProjectFromLinqpadQuery
 	$mainIsVoid = $true
 	$mainHasArgs = $false
 	$hasStaticMain = $false
+	$entryFound = $false
 	foreach($line in $query.Code) {
-		if ($line -match '(static )?(void|int) Main\((string\[\] args)?\)') {
+		if (!$entryFound -AND ($line -match '(static )?(void|int) Main\((string\[\] args)?\)')) {
 			if ($matches[1]) {
 				# if it has static Main then we should use it as-is
 				$hasStaticMain = $true
@@ -174,6 +175,7 @@ function New-ProjectFromLinqpadQuery
 			if (!$hasStaticMain) {
 				$line = "$($matches[2]) MainMain($($matches[3]))"
 			}
+			$entryFound = $true
 		}
 
 		if (!$flagFound -AND ($line -match $FLAG)) {
@@ -285,7 +287,9 @@ function New-ProjectFromLinqpadQuery
 				}
 			}
 
+			'#region LPMAKE'
 			$libcode
+			'#endregion LPMAKE'
 			'}'
 		} else {
 			if (!$islib) {
@@ -337,7 +341,17 @@ function New-ProjectFromLinqpadQuery
 				$nugetArgs += ('-source', $_)
 			}
 		}
-		& nuget @nugetArgs
+		# Nuget 3.4 is not able to restore project.json created by this script, while
+		# nuget 3.3 does work; I haven't yet figured out the specific changes required to 
+		# be made in project.json, given the fact that there will be changes to project.json
+		# and msbuild due to .net core not reached RTW yet, I will only use nuget.exe 3.3 
+		# here, which we will download if not found in specific folder.
+		$nugetExe = "$PsScriptRoot\nuget.exe"
+		if (!(Test-Path $nugetExe)) {
+			$nugetExeUrl = 'https://dist.nuget.org/win-x86-commandline/v3.3.0/nuget.exe'
+			Invoke-WebRequest $nugetExeUrl -OutFile $nugetExe
+		}
+		& $nugetExe @nugetArgs
 
         Resolve-NugetReferenceVersions $query.NugetReferences 'project.lock.json'
 	}
@@ -347,7 +361,7 @@ function New-ProjectFromLinqpadQuery
 		throw "Unable to find $msbuild"
 	}
 
-	& $msbuild $projectFile
+	& $msbuild /nologo /v:q $projectFile
     if ($LastExitCode -eq 0) {
         if ($islib) {
             if ($Load) {

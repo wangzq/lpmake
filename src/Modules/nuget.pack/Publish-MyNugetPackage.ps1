@@ -44,6 +44,6 @@ function Publish-MyNugetPackage
     
     $cleanupScript = "$targetDir\_Cleanup.ps1"
     if (Test-Path $cleanupScript) {
-        & $cleanupScript
+        & $cleanupScript $Name
     }
 }
