@@ -44,7 +44,9 @@ function New-ProjectFromLinqpadQuery
 		[switch] $Force,
 
 		# used when restore packages
-		[string[]] $NugetSources
+		[string[]] $NugetSources,
+
+		[string] $FrameworkVersion = '4.5.2'
 		)
 	$csharpImports = @(
 			'System'
@@ -327,9 +329,9 @@ function New-ProjectFromLinqpadQuery
 		$conditions = ';CMD'
 	}
 	if ($fsharp) {
-		$content = New-Fsproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -OutputType $OutputType -Conditions $conditions
+		$content = New-Fsproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -OutputType $OutputType -Conditions $conditions -FrameworkVersion $FrameworkVersion
 	} else {
-		$content = New-Csproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -Unsafe:$Unsafe -OutputType $OutputType -Conditions $conditions
+		$content = New-Csproj -Name $Name -References $references -Sources @([IO.Path]::GetFileName($sourceFile)) -Contents $contents -Unsafe:$Unsafe -OutputType $OutputType -Conditions $conditions -FrameworkVersion $FrameworkVersion
 	}
 	$content | Out-File $projectFile -Encoding UTF8
 

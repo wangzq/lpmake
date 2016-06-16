@@ -18,7 +18,9 @@ function New-Csproj
 		[string] $OutputType = 'Library',
 
 		# conditional compilations
-		[string] $Conditions
+		[string] $Conditions,
+
+		[string] $FrameworkVersion = '4.5.2'
 		)
 	function GetList($name, $items) {
 		foreach($item in $items) {
@@ -35,6 +37,7 @@ function New-Csproj
 	[IO.File]::ReadAllText("$PsScriptRoot\csproj.template").Replace(
 		'$guid$', $Id).Replace(
 		'$name$', $Name).Replace(
+		'$fxver$', $FrameworkVersion).Replace(
 		'$references$', ((GetList 'Reference' $References) -join "`n")).Replace(
 		'$compiles$', ((GetList 'Compile' $Sources) -join "`n")).Replace(
 		'$contents$', ((GetList 'Content' $Contents) -join "`n")).Replace(
